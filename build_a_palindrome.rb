@@ -35,18 +35,18 @@ count.times do |i|
   s1 = gets.strip
   s2 = gets.strip
 
-  # Find all non-trivial palindromes in s2
-  s2_palindromes = {}
-  for x in (0..(s2.length-1))
-    for y in ((x+1)..(s2.length-1))
-      s2_substring = s2[x..y]
-      if is_palindrome?(s2_substring)
-        unless s2_palindromes[y] && s2_palindromes[y] >= s2_substring.length
-          s2_palindromes[y] = s2_substring.length
-        end
+# Find all non-trivial palindromes in s2 by brute force
+s2_palindromes = {}
+for x in (0..(s2.length-1))
+  for y in ((x+1)..(s2.length-1))
+    s2_substring = s2[x..y]
+    if is_palindrome?(s2_substring)
+      unless s2_palindromes[y] && s2_palindromes[y] >= s2_substring.length
+        s2_palindromes[y] = s2_substring.length
       end
     end
   end
+end
 puts s2_palindromes.inspect
 
   best = nil
@@ -64,30 +64,44 @@ puts s2_palindromes.inspect
         # we won't be able to find a match for the first N+1 characters of s1
         break unless s2.index(search_string_right(s1_substring))
 
+        # Now look at all substrings of s2
         for b in (s2.length-1).downto(0)
           for a in b.downto(0)
 
             # s2[a..b] is our current substring of s2
             s2_substring = s2[a..b]
-puts "== #{s1_substring} #{s2_substring}"
             test_string = s1_substring + s2_substring
+            #puts "== #{s1_substring} #{s2_substring}"
+
             if is_palindrome?(test_string)
-puts "PALINDROME FOUND: #{test_string}"
+              #puts "PALINDROME FOUND: #{test_string}"
               best = new_best(test_string,best)
-              if s2_substring.length == (s1_substring.length + 1)
+
+              # In the case where we have equal parts from s1 and s2 (and there's 
+              # more of s2 left), we can now use the s2_palindromes hash to derive 
+              # the rest and then break
+              if ((s2_substring.length == s1_substring.length) && (a != 0))
+                #puts "Lengths match"
+                #puts "b == #{b}"
+                #puts "s1_substring.length == #{s1_substring.length}"
                 center_end = b-s1_substring.length
                 if s2_palindromes[center_end]
                   center_begin = center_end-s2_palindromes[center_end]+1
                   center_palindrome = s2[(center_begin)..(center_end)]
-puts "Palindrome found in s2 of length #{s2_palindromes[center_end]}: \"#{center_palindrome}\""
-                  full_palindrome = s1_substring + s2[(center_begin)..b]
-puts "Full Palindrome: \"#{full_palindrome}\""
+                  #puts "Palindrome found in s2 of length #{s2_palindromes[center_end]}: \"#{center_palindrome}\""
+                  full_palindrome = s1_substring + center_palindrome + s2_substring
+                  #puts "Full Palindrome: \"#{full_palindrome}\""
                 else
-                  #best = new_best(s1_substring + s2_substring,best)
+                  center_palindrome = s2[center_end]
+                  #puts "Calculated length 1 palindrome \"#{center_palindrome}\""
+                  full_palindrome = s1_substring + s2[center_end] + s2_substring
+                  #puts "Adding calculated best: \"#{full_palindrome}\""
                 end
+                best = new_best(full_palindrome,best)
+                break
               end
             else
-              if s2_substring.length <= s1_substring.length
+              if s2_substring.length >= s1_substring.length
                 break
               end
             end
