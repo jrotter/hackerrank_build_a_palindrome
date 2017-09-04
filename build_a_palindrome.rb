@@ -1,21 +1,29 @@
-# This test is essential :)
-def is_palindrome?(a)
-  a == a.reverse
-end
+class String
 
-# Find the minimal string that's needed to "palindrome" this string to the right
-def search_string_right(s)
-  best = nil
-  for i in (s.length).downto(1)
-    unless s.index(s[(i-1)..(s.length-1)].reverse)
-      return s[0...i].reverse
-    end  
+  # Is the String object a palindrome?
+  def palindrome?
+    self == self.reverse
   end
-  if s.length == 1
-    s
-  else
-    s[0..(s.length-2)].reverse
+
+  # Return an array of all indexes where the substr was found within the string
+  def indexes(substr)
+    outarray = nil
+    if (i = self.index(substr))
+      outarray = []
+      z = self.length
+      sl = substr.length
+      while i
+        outarray << i
+        if (j = self[(i+1)...z].index(substr))
+          i += (j+1)
+        else
+          i = nil
+        end
+      end
+    end
+    outarray
   end
+
 end
 
 # Return the NEW best palindrome
@@ -29,91 +37,115 @@ def new_best(test_string,best)
   end
 end
 
+# Find all trivial palindromic substrings in a string
+# Returns an array of their leftmost index in the string
+def find_palindromes_left(s)
+  outarray = []
+  for x in (0..(s.length-1))
+    outarray[x] = 0
+  end
+  for x in (0..(s.length-1))
+    for y in ((x)..(s.length-1))
+      s_substring = s[x..y]
+      if s_substring.palindrome?
+        if s_substring.length > outarray[x]
+          outarray[x] = s_substring.length
+        end
+      end
+    end
+  end
+  outarray
+end
+
+# Find all trivial palindromic substrings in a string
+# Returns an array of their rightmost index in the string
+def find_palindromes_right(s)
+  outarray = []
+  for x in (0..(s.length-1))
+    outarray[x] = 0
+  end
+  for x in (0..(s.length-1))
+    for y in ((x)..(s.length-1))
+      s_substring = s[x..y]
+      if s_substring.palindrome?
+        if s_substring.length > outarray[y]
+          outarray[y] = s_substring.length
+        end
+      end
+    end
+  end
+  outarray
+end
+
 # Read in the data
 count = gets.strip.to_i
 count.times do |i|
   s1 = gets.strip
   s2 = gets.strip
 
-# Find all non-trivial palindromes in s2 by brute force
-s2_palindromes = {}
-for x in (0..(s2.length-1))
-  for y in ((x+1)..(s2.length-1))
-    s2_substring = s2[x..y]
-    if is_palindrome?(s2_substring)
-      unless s2_palindromes[y] && s2_palindromes[y] >= s2_substring.length
-        s2_palindromes[y] = s2_substring.length
-      end
-    end
-  end
-end
-puts s2_palindromes.inspect
+  # Find all palindromes in s1 (left-indexed) and s2 (right-indexed)
+  s1_palindromes = find_palindromes_left(s1)
+  #puts s1_palindromes.inspect
+  s2_palindromes = find_palindromes_right(s2)
+  #puts s2_palindromes.inspect
 
   best = nil
   s1_substring = nil
   s2_substring = nil
+  indexlists = {}
 
   # Run through all possible substrings of s1
   for x in (0..(s1.length-1))
-    if s2.index(s1[x])  # If the first character of s1 is not in s2, forget it
-      for y in (x..(s1.length-1))
-        # s1[x..y] is our current substring of s1
-        s1_substring = s1[x..y]
+    for y in (x..(s1.length-1))
+      # The left bookend is s1[x..y]
+      left_bookend = s1[x..y]
+      #puts "Left bookend: \"#{left_bookend}\" (#{x})"
 
-        # If we can't find a match for the first N characters of s1,
-        # we won't be able to find a match for the first N+1 characters of s1
-        break unless s2.index(search_string_right(s1_substring))
+      # This substring is the left bookend of the palindrome.
+      # Find all possible right bookends
+      indexlists[left_bookend] ||= s2.indexes(left_bookend.reverse)
+      indexlist = indexlists[left_bookend]
 
-        # Now look at all substrings of s2
-        for b in (s2.length-1).downto(0)
-          for a in b.downto(0)
+      # If any right bookends were found...
+      if indexlist
 
-            # s2[a..b] is our current substring of s2
-            s2_substring = s2[a..b]
-            test_string = s1_substring + s2_substring
-            #puts "== #{s1_substring} #{s2_substring}"
+        # Loop through the right bookends
+        indexlist.each do |a|
+          b = a + left_bookend.length - 1
+          # The right bookend is s2[a..b]
+          right_bookend = s2[a..b]
+          #puts "  Right bookend: \"#{right_bookend}\" (#{a})"
 
-            if is_palindrome?(test_string)
-              #puts "PALINDROME FOUND: #{test_string}"
-              best = new_best(test_string,best)
+          # Try the body from s1
+          unless y == s1.length-1
+            body = s1[(y+1)..(y+s1_palindromes[y+1])]
+            #puts "  Body from s1: \"#{body}\""
+            teststring = left_bookend + body + right_bookend
+            #puts "    Test string: \"#{teststring}\""
+            best = new_best(teststring,best)
+          end
 
-              # In the case where we have equal parts from s1 and s2 (and there's 
-              # more of s2 left), we can now use the s2_palindromes hash to derive 
-              # the rest and then break
-              if ((s2_substring.length == s1_substring.length) && (a != 0))
-                #puts "Lengths match"
-                #puts "b == #{b}"
-                #puts "s1_substring.length == #{s1_substring.length}"
-                center_end = b-s1_substring.length
-                if s2_palindromes[center_end]
-                  center_begin = center_end-s2_palindromes[center_end]+1
-                  center_palindrome = s2[(center_begin)..(center_end)]
-                  #puts "Palindrome found in s2 of length #{s2_palindromes[center_end]}: \"#{center_palindrome}\""
-                  full_palindrome = s1_substring + center_palindrome + s2_substring
-                  #puts "Full Palindrome: \"#{full_palindrome}\""
-                else
-                  center_palindrome = s2[center_end]
-                  #puts "Calculated length 1 palindrome \"#{center_palindrome}\""
-                  full_palindrome = s1_substring + s2[center_end] + s2_substring
-                  #puts "Adding calculated best: \"#{full_palindrome}\""
-                end
-                best = new_best(full_palindrome,best)
-                break
-              end
-            else
-              if s2_substring.length >= s1_substring.length
-                break
-              end
-            end
+          # Try the body from s2
+          unless a == 0
+            body = s2[(a-s2_palindromes[a-1])..(a-1)]
+            #puts "  Body from s2: \"#{body}\""
+            teststring = left_bookend + body + right_bookend
+            #puts "    Test string: \"#{teststring}\""
+            best = new_best(teststring,best)
           end
         end
+      else
+        # If a right bookend was not found for x at a given length
+        # nothing will be found with a greater length
+        break
       end
     end
   end
+
   if best
     puts best
   else
     puts "-1"
   end
-end
 
+end
