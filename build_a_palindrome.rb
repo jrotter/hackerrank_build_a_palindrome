@@ -26,16 +26,32 @@ class String
 
 end
 
-# Return the NEW best palindrome
-def new_best(test_string,best)
-  if best == nil  || 
-     (test_string.length > best.length) ||
-     ((test_string.length == best.length) && (test_string < best))
-    test_string
-  else
-    best
+
+module Best
+
+  def Best.init
+    @@value = nil
+    @@length = 0
   end
+
+  def Best.check(test_string)
+    if test_string.length > @@length ||
+      ((test_string.length == @@length) && (test_string < @@value))
+      @@value = test_string
+      @@length = test_string.length
+    end
+  end
+
+  def Best.length
+    @@length
+  end
+
+  def Best.value
+    @@value
+  end
+
 end
+
 
 # Find all trivial palindromic substrings in a string
 # Returns an array of their leftmost index in the string
@@ -52,6 +68,7 @@ def find_palindromes_left(s)
         if test_string.palindrome?
           #puts "Found palindrome: \"#{test_string}\""
           outarray[x] = test_string.length
+          # Note that I will always find a palindrome at s[x..x] so y won't pass x
           break
         end
       end
@@ -75,6 +92,7 @@ def find_palindromes_right(s)
         if test_string.palindrome?
           #puts "Found palindrome: \"#{test_string}\""
           outarray[y] = test_string.length
+          # Note that I will always find a palindrome at s[y..y] so x won't pass y
           break
         end
       end
@@ -88,20 +106,27 @@ count = gets.strip.to_i
 count.times do |i|
   s1 = gets.strip
   s2 = gets.strip
+  Best::init()
 
   # Find all palindromes in s1 (left-indexed) and s2 (right-indexed)
   s1_palindromes = find_palindromes_left(s1)
-  puts s1_palindromes.inspect
+  #puts s1_palindromes.inspect
   s2_palindromes = find_palindromes_right(s2)
-  puts s2_palindromes.inspect
+  #puts s2_palindromes.inspect
 
-  best = nil
   s1_substring = nil
   s2_substring = nil
   indexlists = {}
 
   # Run through all possible substrings of s1
   for x in (0..(s1.length-1))
+
+    # On the off chance that our best palindrome is already bigger than 
+    # anything else we'll see from here on out, break
+    if (Best::length > ((s1.length-x) + s2.length))
+      break
+    end
+
     for y in (x..(s1.length-1))
       # The left bookend is s1[x..y]
       left_bookend = s1[x..y]
@@ -115,36 +140,52 @@ count.times do |i|
       # If any right bookends were found...
       if indexlist
 
-        # Loop through the right bookends
-        indexlist.each do |a|
-          b = a + left_bookend.length - 1
-          # The right bookend is s2[a..b]
-          right_bookend = s2[a..b]
-          #puts "  Right bookend: \"#{right_bookend}\" (#{a})"
+        total_bookend_length = left_bookend.length * 2
 
-          # Try the body from s1
-          unless y == s1.length-1
+        # By definition, the bookends are mirror images
+        right_bookend = left_bookend.reverse
+
+        # Try the body from s1
+        unless y == s1.length-1
+          # Only bother if this could be better than the best
+          if (total_bookend_length + s1_palindromes[y+1]) >= Best::length
             body = s1[(y+1)..(y+s1_palindromes[y+1])]
             #puts "  Body from s1: \"#{body}\""
             teststring = left_bookend + body + right_bookend
             #puts "    Test string: \"#{teststring}\""
-            best = new_best(teststring,best)
+            Best::check(teststring)
+          end
+        end
+
+        # Loop through the right bookends
+        indexlist.each do |a|
+          #b = a + left_bookend.length - 1
+          # The right bookend is s2[a..b]
+          #puts "  Right bookend: \"#{right_bookend}\" (#{a})"
+
+          if a == 0 
+            if y == s1.length-1
+              # Try the bookends without a body
+              #puts "  No body"
+              teststring = left_bookend + right_bookend
+              #puts "    Test string: \"#{teststring}\""
+              Best::check(teststring)
+            end
+          else
+            # Try the body from s2
+
+            # Only bother if this could be better than the best
+            if (total_bookend_length + s2_palindromes[a-1]) >= Best::length
+              body = s2[(a-s2_palindromes[a-1])..(a-1)]
+              #puts "  Body from s2: \"#{body}\""
+              teststring = left_bookend + body + right_bookend
+              #puts "    Test string: \"#{teststring}\""
+              Best::check(teststring)
+            end
           end
 
-          # Try the body from s2
-          unless a == 0
-            body = s2[(a-s2_palindromes[a-1])..(a-1)]
-            #puts "  Body from s2: \"#{body}\""
-            teststring = left_bookend + body + right_bookend
-            #puts "    Test string: \"#{teststring}\""
-            best = new_best(teststring,best)
-          end
 
-          # Try the bookends without a body
-          #puts "  No body"
-          teststring = left_bookend + right_bookend
-          #puts "    Test string: \"#{teststring}\""
-          best = new_best(teststring,best)
+
         end
       else
         # If a right bookend was not found for x at a given length
@@ -154,8 +195,8 @@ count.times do |i|
     end
   end
 
-  if best
-    puts best
+  if Best::value
+    puts Best::value
   else
     puts "-1"
   end
