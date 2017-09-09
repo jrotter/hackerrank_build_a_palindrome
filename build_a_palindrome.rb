@@ -42,14 +42,17 @@ end
 def find_palindromes_left(s)
   outarray = []
   for x in (0..(s.length-1))
-    outarray[x] = 0
+    outarray[x] = 1
   end
   for x in (0..(s.length-1))
-    for y in ((x)..(s.length-1))
-      s_substring = s[x..y]
-      if s_substring.palindrome?
-        if s_substring.length > outarray[x]
-          outarray[x] = s_substring.length
+    if matches = s.indexes(s[x])
+      matches.reverse.each do |y|
+        test_string = s[x..y]
+        #puts "x=#{x}, y=#{y}, substring = \"#{test_string}\""
+        if test_string.palindrome?
+          #puts "Found palindrome: \"#{test_string}\""
+          outarray[x] = test_string.length
+          break
         end
       end
     end
@@ -62,14 +65,17 @@ end
 def find_palindromes_right(s)
   outarray = []
   for x in (0..(s.length-1))
-    outarray[x] = 0
+    outarray[x] = 1
   end
-  for x in (0..(s.length-1))
-    for y in ((x)..(s.length-1))
-      s_substring = s[x..y]
-      if s_substring.palindrome?
-        if s_substring.length > outarray[y]
-          outarray[y] = s_substring.length
+  for y in (s.length-1).downto(0)
+    if matches = s.indexes(s[y])
+      matches.each do |x|
+        test_string = s[x..y]
+        #puts "x=#{x}, y=#{y}, substring = \"#{test_string}\""
+        if test_string.palindrome?
+          #puts "Found palindrome: \"#{test_string}\""
+          outarray[y] = test_string.length
+          break
         end
       end
     end
@@ -85,9 +91,9 @@ count.times do |i|
 
   # Find all palindromes in s1 (left-indexed) and s2 (right-indexed)
   s1_palindromes = find_palindromes_left(s1)
-  #puts s1_palindromes.inspect
+  puts s1_palindromes.inspect
   s2_palindromes = find_palindromes_right(s2)
-  #puts s2_palindromes.inspect
+  puts s2_palindromes.inspect
 
   best = nil
   s1_substring = nil
@@ -133,6 +139,12 @@ count.times do |i|
             #puts "    Test string: \"#{teststring}\""
             best = new_best(teststring,best)
           end
+
+          # Try the bookends without a body
+          #puts "  No body"
+          teststring = left_bookend + right_bookend
+          #puts "    Test string: \"#{teststring}\""
+          best = new_best(teststring,best)
         end
       else
         # If a right bookend was not found for x at a given length
