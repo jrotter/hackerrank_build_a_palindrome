@@ -5,20 +5,25 @@ class String
     self == self.reverse
   end
 
+  def palindrome?
+    a = 0
+    b = length-1
+    while b > a
+      return false if self[a] != self[b]
+      a += 1
+      b -= 1
+    end
+    true
+  end
+
   # Return an array of all indexes where the substr was found within the string
   def indexes(substr)
     outarray = nil
     if (i = self.index(substr))
       outarray = []
-      z = self.length
-      sl = substr.length
       while i
         outarray << i
-        if (j = self[(i+1)...z].index(substr))
-          i += (j+1)
-        else
-          i = nil
-        end
+        i = self.index(substr,i+1)
       end
     end
     outarray
@@ -157,8 +162,27 @@ count.times do |i|
           end
         end
 
-        # Loop through the right bookends
-        indexlist.each do |a|
+        # Reduce indexlist to only palindrome sizes that may 
+        # exceed the best we've seen
+        reducedlist = []
+        max = Best::length - total_bookend_length
+        if max == 0 && indexlist[0] == 0
+          reducedlist << 0
+          start = 1
+        else
+          start = 0
+        end
+        for i in start.upto(indexlist.length - 1)
+          if s2_palindromes[indexlist[i]-1] > max
+            reducedlist = [ indexlist[i] ]
+          elsif s2_palindromes[indexlist[i]-1] == max
+            reducedlist << indexlist[i]
+          end
+        end
+        puts "Reduced list: #{reducedlist.inspect}"
+
+        # Now loop through the remaining right bookends
+        reducedlist.each do |a|
           #b = a + left_bookend.length - 1
           # The right bookend is s2[a..b]
           #puts "  Right bookend: \"#{right_bookend}\" (#{a})"
@@ -181,10 +205,10 @@ count.times do |i|
               teststring = left_bookend + body + right_bookend
               #puts "    Test string: \"#{teststring}\""
               Best::check(teststring)
+            else
+              #puts "  Not worth trying palindrome from s2"
             end
           end
-
-
 
         end
       else
