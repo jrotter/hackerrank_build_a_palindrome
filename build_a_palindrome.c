@@ -8,11 +8,19 @@ void print_array(int array[],int size)
 {
   int i;
 
-  for (i=0;i<size;i++)
-  {
-    //printf("%d ",array[i]);
+  for (i=0;i<size;i++) {
+    printf("%d ",array[i]);
   }
-  //printf("\n\n");
+  printf("\n\n");
+}
+
+
+int max (int a, int b) 
+{
+  if (a > b)
+    return a;
+  else
+    return b;
 }
 
 
@@ -20,10 +28,8 @@ int palindrome(char *str, int length) {
   int a = 0;
   int b = length - 1;
 
-  while (b > a) 
-  {
-    if (str[a++] != str[b--])
-    {
+  while (b > a) {
+    if (str[a++] != str[b--]) {
       return 0;
     }
   }
@@ -31,31 +37,26 @@ int palindrome(char *str, int length) {
 }
 
 
+// Find the length of the longest palindrome ending at s[x]
 void find_palindromes_left(char *s, int length, int results[])
 {
   char hold;
   int x, y;
 
-  for (x=0;x<length;x++)
-  {
+  for (x=0;x<length;x++) {
     results[x] = 1;
   }
-  for (x=0;x<length;x++)
-  {
-    for (y=length-1;y>x;y--)
-    {
-      if (s[y] == s[x]) 
-      {
+  for (x=0;x<length;x++) {
+    for (y=length-1;y>x;y--) {
+      if (s[y] == s[x]) {
         hold = s[y+1];
         s[y+1] = '\0'; /* Temporarily end the string after y */
-        if (palindrome(&(s[x]),y-x+1))
-        {
+        if (palindrome(&(s[x]),y-x+1)) {
           s[y+1] = hold; /* Undo the temporary end-of-string */
           results[x] = y-x+1;
           break;
         }
-        else
-        {
+        else {
           s[y+1] = hold;
         }
       }
@@ -64,36 +65,90 @@ void find_palindromes_left(char *s, int length, int results[])
 }
 
 
+// Find the length of the longest palindrome beginning at s[x]
 void find_palindromes_right(char *s, int length, int results[])
 {
   char hold;
   int x, y;
 
-  for (x=0;x<length;x++)
-  {
+  for (x=0;x<length;x++) {
     results[x] = 1;
   }
-  for (y=length-1;y>0;y--)
-  {
-    for (x=0;x<y;x++)
-    {
-      if (s[y] == s[x]) 
-      {
+  for (y=length-1;y>0;y--) {
+    for (x=0;x<y;x++) {
+      if (s[y] == s[x]) {
         hold = s[y+1];
         s[y+1] = '\0'; /* Temporarily end the string after y */
-        if (palindrome(&(s[x]),y-x+1))
-        {
+        if (palindrome(&(s[x]),y-x+1)) {
           s[y+1] = hold; /* Undo the temporary end-of-string */
           results[y] = y-x+1;
           break;
         }
-        else
-        {
+        else {
           s[y+1] = hold;
         }
       }
     }
   }
+}
+
+
+// Return the length of the maximal bookend ending at s1[x] that has a match in s2
+int find_s1_bookend_length(int x, char *s1, char *s2, char *buffer, int startlength)
+{
+  char *searchstring = buffer;
+  int i = x;
+  int j = 0;
+
+  while (j < startlength) {
+    searchstring[j++] = s1[i--];
+  }
+  searchstring[j+1] = '\0';
+  
+  while (i >= 0) {
+    searchstring[j] = s1[i];
+    searchstring[j+1] = '\0';
+    //printf("x == %d, i == %d, j == %d, last == %d, searchstring == %s\n",x,i,j,startlength,searchstring);
+    if (strstr(s2,searchstring)) {
+      j++;
+      i--;
+    }
+    else {
+      //printf("x == %d: returning %d\n",x,j);
+      return j;
+    }
+  }
+  //printf("x == %d: returning %d\n",x,j);
+  return j;
+}
+
+
+// Return the length of the maximal bookend starting at s2[x] that has a match in s1
+int find_s2_bookend_length(int x, char *s1, char *s2, char *buffer, int startlength)
+{
+  char *searchstring = buffer;
+  int i = x;
+  int j = MAXSTRING;
+
+  searchstring[j--] = '\0';
+  while ((MAXSTRING - 1 - j) < startlength) {
+    searchstring[j--] = s2[i++];
+  }
+  
+  while (s2[i] != '\0') {
+    searchstring[j] = s2[i];
+    //printf("x == %d, i == %d, j == %d, last == %d, searchstring == %s\n",x,i,j,startlength,&(searchstring[j]));
+    if (strstr(s1,&(searchstring[j]))) {
+      j--;
+      i++;
+    }
+    else {
+      //printf("x == %d: returning %d\n",x,i-x);
+      return i-x;
+    }
+  }
+  //printf("x == %d: returning %d\n",x,i-x);
+  return i-x;
 }
 
 
@@ -134,9 +189,12 @@ int main() {
   int s2_palindromes[MAXSTRING];
   int s1_length;
   int s2_length;
+  char tempbuffer[MAXSTRING];
+  int s1_charcounts[26];
+  int s2_charcounts[26];
 
-  char left_bookend[MAXSTRING];
-  char right_bookend[MAXSTRING];
+  int s1_bookend_length[MAXSTRING];
+  int s2_bookend_length[MAXSTRING];
   int bookend_length;
   int total_bookend_length;
   int body_length;
@@ -147,6 +205,7 @@ int main() {
   int teststring_length;
 
   int i, n, x, y, a, b; /* Loop counters */
+  int last;
 
   /* Read in the number of pairs we'll consider */
   i = scanf("%i",&params);
@@ -166,146 +225,40 @@ int main() {
     best_length = 0;
 
     /* Find all palindromes in s1 (left-indexed) and s2 (right-indexed) */
-    find_palindromes_left(s1,s1_length,s1_palindromes); 
+    find_palindromes_left(s1,s1_length,s1_palindromes);
     print_array(s1_palindromes,strlen(s1));
-    find_palindromes_right(s2,s2_length,s2_palindromes); 
+    find_palindromes_right(s2,s2_length,s2_palindromes);
     print_array(s2_palindromes,strlen(s2));
 
-    for (x=0;x<s1_length;x++)
-    {
-      if (best_length <= (s1_length - x + s2_length))
-      {
-        for (y=x;y<s1_length;y++)
-        {
-          /* Set up the bookend data */
-          bookend_length = y-x+1;
-          total_bookend_length = bookend_length * 2;
-          strncpy(left_bookend,&(s1[x]),bookend_length);
-          left_bookend[bookend_length] = '\0';
-          //printf("Left bookend (%d,%d) = \"%s\"\n",x,y,left_bookend);
-          reverse_string(right_bookend,left_bookend,bookend_length);
+    /* Find the lengths of all left bookends */
+    last = 1;
+    for (x=s1_length-1;x>=0;x--) {
+      last = find_s1_bookend_length(x,s1,s2,tempbuffer,last-1);
+      s1_bookend_length[x] = last;
+    }
+    print_array(s1_bookend_length,s1_length);
 
-          /* See if any right bookends are found */
-          if (strstr(s2,right_bookend))
-          {
-            //printf("  Right bookend = \"%s\"\n",right_bookend);
+    /* Find the lengths of all right bookends */
+    last = 1;
+    for (x=0;x<s1_length;x++) {
+      last = find_s2_bookend_length(x,s1,s2,tempbuffer,last-1);
+      s2_bookend_length[x] = last;
+    }
+    print_array(s2_bookend_length,s2_length);
 
-            /* Try the body from s1 */
-            if (y != (s1_length-1))
-            {
-              body_length = s1_palindromes[y+1];
-  
-              /* Ignore this body if the resulting string would be too small */
-              if ((total_bookend_length + body_length) >= best_length)
-              {
-                /* Build the test string */
-                teststring_length = total_bookend_length + body_length;
-                strcpy(teststring,left_bookend);
-                strncpy(&(teststring[bookend_length]),&(s1[y+1]),body_length);
-                strncpy(&(teststring[bookend_length+body_length]),right_bookend,bookend_length);
-                teststring[teststring_length] = '\0';
-                //printf("    Teststring (body from s1): \"%s\"\n",teststring);
-  
-                /* Compare test string with the best we've seen */
-                save_if_best(teststring,teststring_length,best,&best_length);
-              }
-            }
-            else /* No body available from s1 - try just the bookends */
-            {
-              /* Ignore this body if the resulting string would be too small */
-              if (total_bookend_length >= best_length)
-              {
-                /* Build the test string */
-                teststring_length = total_bookend_length;
-                strcpy(teststring,left_bookend);
-                strncpy(&(teststring[bookend_length]),right_bookend,bookend_length);
-                teststring[teststring_length] = '\0';
-                //printf("    Teststring (no body): \"%s\"\n",teststring);
-  
-                /* Compare test string with the best we've seen */
-                save_if_best(teststring,teststring_length,best,&best_length);
-              }
-            }
-          }
-          else /* No right bookend was found */
-          {
-            /* If a right bookend was not found for x at a given length
-               nothing will be found with a greater length */
-            break;
-          }
-        }
-      }
-    }  /* for */
-
-    for (b=s2_length-1;b>=0;b--)
-    {
-      if (best_length <= (s1_length + b + 1))
-      {
-        for (a=b;a>=0;a--)
-        {
-          /* Set up the bookend data */
-          bookend_length = b-a+1;
-          total_bookend_length = bookend_length * 2;
-          strncpy(right_bookend,&(s2[a]),bookend_length);
-          right_bookend[bookend_length] = '\0';
-          //printf("Right bookend (%d,%d) = \"%s\"\n",a,b,right_bookend);
-          reverse_string(left_bookend,right_bookend,bookend_length);
-
-          /* See if any left bookends are found */
-          if (strstr(s1,left_bookend))
-          {
-            //printf("  Left bookend = \"%s\"\n",left_bookend);
-
-            /* Try the body from s2 */
-            if (a != 0)
-            {
-              body_length = s2_palindromes[a-1];
-  
-              /* Ignore this body if the resulting string would be too small */
-              if ((total_bookend_length + body_length) >= best_length)
-              {
-                /* Build the test string */
-                teststring_length = total_bookend_length + body_length;
-                strcpy(teststring,left_bookend);
-                strncpy(&(teststring[bookend_length]),&(s2[a-body_length]),body_length);
-                strncpy(&(teststring[bookend_length+body_length]),right_bookend,bookend_length);
-                teststring[teststring_length] = '\0';
-                //printf("    Teststring (body from s2): \"%s\"\n",teststring);
-  
-                /* Compare test string with the best we've seen */
-                save_if_best(teststring,teststring_length,best,&best_length);
-              }
-            }
-            else /* No body available from s2 - try just the bookends */
-            {
-              /* Ignore this body if the resulting string would be too small */
-              if (total_bookend_length >= best_length)
-              {
-                /* Build the test string */
-                teststring_length = total_bookend_length;
-                strcpy(teststring,left_bookend);
-                strncpy(&(teststring[bookend_length]),right_bookend,bookend_length);
-                teststring[teststring_length] = '\0';
-                //printf("    Teststring (no body): \"%s\"\n",teststring);
-  
-                /* Compare test string with the best we've seen */
-                save_if_best(teststring,teststring_length,best,&best_length);
-              }
-            }
-          }
-          else /* No left bookend was found */
-          {
-            /* If a left bookend was not found for b at a given length
-               nothing will be found with a greater length */
-            break;
-          }
-        }
-      }
-    }  /* for */
-    if (best_length)
-      printf("%s\n",best);
-    else
-      printf("-1\n");
+    /* Determine the maximum palindrome length */
+    /* Prime it with the best bookend-only length */
+    best_length = max(s1_bookend_length[s1_length-1],s2_bookend_length[0])*2;
+    printf("best == %d\n",best_length);
+    for (x=1;x<s1_length;x++) {
+      best_length = max(best_length,s1_bookend_length[x-1]*2+s1_palindromes[x]);
+    }
+    for (x=0;x<s2_length-1;x++) {
+      best_length = max(best_length,s2_bookend_length[x+1]*2+s2_palindromes[x]);
+    }
+    printf("best == %d\n",best_length);
+      
+   
   }
 }
 
