@@ -158,8 +158,8 @@ int main() {
     i = scanf("%s",s2);
     s1_length = strlen(s1);
     s2_length = strlen(s2);
-    printf("s1 == \"%s\"\n",s1);
-    printf("s2 == \"%s\"\n",s2);
+    //printf("s1 == \"%s\"\n",s1);
+    //printf("s2 == \"%s\"\n",s2);
 
     /* Initialize our best result */
     best[0] = '\0';
@@ -167,9 +167,9 @@ int main() {
 
     /* Find all palindromes in s1 (left-indexed) and s2 (right-indexed) */
     find_palindromes_left(s1,s1_length,s1_palindromes); 
-    print_array(s1_palindromes,strlen(s1));
+    //print_array(s1_palindromes,strlen(s1));
     find_palindromes_right(s2,s2_length,s2_palindromes); 
-    print_array(s2_palindromes,strlen(s2));
+    //print_array(s2_palindromes,strlen(s2));
 
     for (x=0;x<s1_length;x++)
     {

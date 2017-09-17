@@ -179,7 +179,7 @@ count.times do |i|
             reducedlist << indexlist[i]
           end
         end
-        puts "Reduced list: #{reducedlist.inspect}"
+        #puts "Reduced list: #{reducedlist.inspect}"
 
         # Now loop through the remaining right bookends
         reducedlist.each do |a|
